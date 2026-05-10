@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PGA Championship 2026 — Sweepstakes Leaderboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep:    #0f1f35;
+    --gold:       #c9a84c;
+    --gold-light: #e8d08a;
+    --cream:      #f0eeea;
+    --text-soft:  #7a7a8a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(255,255,255,0.01) 60px, rgba(255,255,255,0.01) 61px),
+      repeating-linear-gradient(0deg,  transparent, transparent 60px, rgba(255,255,255,0.01) 60px, rgba(255,255,255,0.01) 61px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 4rem;
+  }
+
+  header { text-align: center; margin-bottom: 3rem; }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 6vw, 3.6rem);
+    font-weight: 900;
+    line-height: 1.05;
+    color: var(--cream);
+    margin-bottom: 0.4rem;
+  }
+
+  h1 span { color: var(--gold); }
+
+  .header-sub {
+    font-size: 13px;
+    color: rgba(240,238,234,0.45);
+    letter-spacing: 0.05em;
+    margin-bottom: 1.5rem;
+  }
+
+  .gold-rule {
+    width: 60px; height: 1.5px;
+    background: var(--gold);
+    margin: 0 auto 1.5rem;
+    opacity: 0.5;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .status-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: rgba(240,238,234,0.5);
+    letter-spacing: 0.05em;
+  }
+
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #5cb85c;
+    animation: pulse 1.8s infinite;
+  }
+  .live-dot.off { background: var(--text-soft); animation: none; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .btn-wrap { display: flex; justify-content: center; margin-bottom: 2.5rem; }
+
+  .btn-refresh {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 12px 32px;
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-refresh::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--gold);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease;
+  }
+  .btn-refresh:hover::before { transform: scaleX(1); }
+  .btn-refresh:hover { color: var(--bg-deep); }
+  .btn-refresh span { position: relative; z-index: 1; }
+  .btn-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-refresh:disabled::before { display: none; }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.7;
+    margin-bottom: 0.75rem;
+  }
+
+  .board-wrap {
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 2.5rem;
+  }
+
+  .board-hd {
+    display: grid;
+    grid-template-columns: 44px 1fr 56px;
+    padding: 8px 20px;
+    background: rgba(201,168,76,0.1);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(201,168,76,0.6);
+    gap: 12px;
+  }
+  .board-hd .col-score { text-align: right; }
+
+  .board-row {
+    display: grid;
+    grid-template-columns: 44px 1fr 56px;
+    padding: 14px 20px;
+    gap: 12px;
+    align-items: center;
+    border-top: 1px solid rgba(201,168,76,0.08);
+    transition: background 0.15s;
+    cursor: default;
+    animation: fadeUp 0.3s ease both;
+  }
+  .board-row:hover { background: rgba(255,255,255,0.03); }
+  .board-row.rank-1 { background: rgba(201,168,76,0.07); }
+  .board-row.rank-1:hover { background: rgba(201,168,76,0.1); }
+
+  .board-row:nth-child(1) { animation-delay: 0.03s; }
+  .board-row:nth-child(2) { animation-delay: 0.06s; }
+  .board-row:nth-child(3) { animation-delay: 0.09s; }
+  .board-row:nth-child(4) { animation-delay: 0.12s; }
+  .board-row:nth-child(5) { animation-delay: 0.15s; }
+  .board-row:nth-child(6) { animation-delay: 0.18s; }
+  .board-row:nth-child(7) { animation-delay: 0.21s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .rank-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: rgba(240,238,234,0.2);
+    text-align: center;
+    line-height: 1;
+  }
+  .rank-1 .rank-num { color: var(--gold); opacity: 0.9; }
+  .rank-2 .rank-num { color: rgba(240,238,234,0.55); }
+  .rank-3 .rank-num { color: rgba(201,168,76,0.5); }
+
+  .p-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 6px;
+  }
+
+  .golfer-list { display: flex; flex-wrap: wrap; gap: 4px; }
+
+  .g-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 9.5px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    border: 1px solid rgba(201,168,76,0.15);
+    color: rgba(240,238,234,0.4);
+    white-space: nowrap;
+  }
+  .g-tag.counting {
+    border-color: rgba(201,168,76,0.4);
+    color: var(--gold-light);
+    background: rgba(201,168,76,0.07);
+  }
+  .g-tag.cut {
+    color: rgba(240,238,234,0.18);
+    text-decoration: line-through;
+    border-color: transparent;
+  }
+
+  .score-col { text-align: right; }
+
+  .score-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--cream);
+  }
+  .score-val.under { color: #6baed6; }
+  .score-val.over  { color: #fc8d59; }
+  .score-val.empty { color: rgba(240,238,234,0.18); font-size: 1.1rem; }
+
+  .score-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    color: rgba(240,238,234,0.22);
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .golfer-board-wrap {
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 2.5rem;
+  }
+
+  .golfer-row {
+    display: grid;
+    grid-template-columns: 1fr 60px 50px;
+    padding: 9px 20px;
+    gap: 10px;
+    align-items: center;
+    border-top: 1px solid rgba(201,168,76,0.06);
+    font-size: 13px;
+  }
+  .golfer-row.hd {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(201,168,76,0.5);
+    background: rgba(201,168,76,0.06);
+    padding: 7px 20px;
+  }
+
+  .g-name { color: var(--cream); font-weight: 300; }
+  .g-owner { font-family: 'DM Mono', monospace; font-size: 10px; color: rgba(240,238,234,0.3); }
+  .g-pos { font-family: 'DM Mono', monospace; font-size: 10px; color: rgba(240,238,234,0.45); text-align: center; }
+  .g-score { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; text-align: right; color: var(--cream); }
+  .g-score.u { color: #6baed6; }
+  .g-score.o { color: #fc8d59; }
+  .g-score.m { color: rgba(240,238,234,0.22); }
+
+  footer {
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: rgba(240,238,234,0.18);
+    text-transform: uppercase;
+    margin-top: 1rem;
+  }
+
+  .msg-area {
+    text-align: center;
+    padding: 2.5rem;
+    color: rgba(240,238,234,0.3);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 1.5px solid rgba(201,168,76,0.25);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .err-msg { color: #fc8d59; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">Quail Hollow Club · May 14–17, 2026</div>
+    <h1>PGA <span>Championship</span></h1>
+    <div class="header-sub">Sweepstakes Leaderboard · Best 3 of 6</div>
+    <div class="gold-rule"></div>
+    <div class="status-bar">
+      <div class="status-chip">
+        <div class="live-dot off" id="live-dot"></div>
+        <span id="status-txt">Not yet started</span>
+      </div>
+      <div class="status-chip" id="updated-chip" style="display:none">
+        Updated <span id="updated-time">—</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="btn-wrap">
+    <button class="btn-refresh" id="refresh-btn" onclick="fetchScores()">
+      <span id="btn-label">↻ Refresh Scores</span>
+    </button>
+  </div>
+
+  <div class="section-label">Standings</div>
+  <div class="board-wrap" id="board-wrap">
+    <div class="msg-area">Press refresh to load live PGA Championship scores</div>
+  </div>
+
+  <div id="detail-section" style="display:none">
+    <div class="section-label">Individual Golfer Scores</div>
+    <div class="golfer-board-wrap" id="golfer-wrap"></div>
+  </div>
+
+  <footer>PGA Championship 2026 Sweepstakes · Scoring: Best 3 of 6 golfers</footer>
+</div>
+
+<script>
+const BEST_N = 3; // best N of 6 golfers count
+
+const PARTICIPANTS = {
+  'Tim':    ['Bryson DeChambeau','Tommy Fleetwood','Robert MacIntyre','Joaquin Niemann','Jason Day','Marco Penge'],
+  'Conor':  ['Cameron Young','Brooks Koepka','Patrick Cantlay','Christopher Gotterup','Jake Knapp','Will Zalatoris'],
+  'Simon':  ['Jon Rahm','Viktor Hovland','Russell Henley','Shane Lowry','Maverick McNealy','Corey Conners'],
+  'Mark P': ['Xander Schauffele','Justin Thomas','Si Woo Kim','Jordan Spieth','Akshay Bhatia','Nicolai Hojgaard'],
+  'Tom':    ['Scottie Scheffler','Collin Morikawa','Sam Burns','Patrick Reed','Min Woo Lee','Adam Scott'],
+  'Mark M': ['Matt Fitzpatrick','Ludvig Aberg','Hideki Matsuyama','Sepp Straka','Kurt Kitayama','Rickie Fowler'],
+  'Alex':   ['Rory McIlroy','Justin Rose','Tyrrell Hatton','J.J. Spaun','Ben Griffin','Jacob Bridgeman'],
+};
+
+const GOLFER_OWNER = {};
+for (const [p, gs] of Object.entries(PARTICIPANTS)) {
+  for (const g of gs) GOLFER_OWNER[g] = p;
+}
+
+let golferScores = {};
+
+// ── Name normalisation & matching ──
+function normalise(s) {
+  return s.normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ø/g,'o').replace(/Ø/g,'O')
+    .replace(/æ/g,'ae').replace(/Æ/g,'AE')
+    .replace(/þ/g,'th').replace(/ð/g,'d')
+    .toLowerCase().trim();
+}
+
+const _allGolfers = [...new Set(Object.values(PARTICIPANTS).flat())];
+const _normFull = new Map();
+const _normLast = new Map();
+for (const g of _allGolfers) {
+  const nf = normalise(g);
+  _normFull.set(nf, g);
+  const nl = nf.split(' ').pop();
+  if (!_normLast.has(nl)) _normLast.set(nl, []);
+  _normLast.get(nl).push(g);
+}
+
+function matchGolfer(espnName) {
+  const en = normalise(espnName);
+  if (_normFull.has(en)) return _normFull.get(en);
+  const el = en.split(' ').pop();
+  const byLast = _normLast.get(el) || [];
+  if (byLast.length === 1) return byLast[0];
+  if (byLast.length > 1) {
+    for (const g of byLast) { if (normalise(g)[0] === en[0]) return g; }
+  }
+  for (const [nl, gs] of _normLast) {
+    if ((en.includes(nl) || nl.includes(el)) && gs.length === 1) return gs[0];
+  }
+  return null;
+}
+
+// ── Score formatting ──
+function sv(v, status) {
+  if (!status || status === 'not_started') return { txt: '—', cls: 'empty' };
+  if (status === 'MC' || status === 'WD' || status === 'DQ') return { txt: status, cls: 'm' };
+  if (v === null || v === undefined) return { txt: '—', cls: 'empty' };
+  if (v === 0) return { txt: 'E', cls: '' };
+  if (v < 0) return { txt: String(v), cls: 'under' };
+  return { txt: '+' + v, cls: 'over' };
+}
+
+// ── ESPN fetch ──
+const ESPN_URL   = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
+const PROXY_URL  = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(ESPN_URL);
+
+async function fetchESPN(url) {
+  const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  return resp.json();
+}
+
+function parseESPN(data) {
+  golferScores = {};
+  let roundLabel = '—';
+  const events = data.events || [];
+  const tourney = events.find(e =>
+    (e.name||'').toLowerCase().includes('pga') ||
+    (e.shortName||'').toLowerCase().includes('pga')
+  ) || events[0];
+  if (!tourney) return roundLabel;
+  const comp = (tourney.competitions||[])[0];
+  if (!comp) return roundLabel;
+  const st = comp.status || {};
+  const completed = st.type && st.type.completed;
+  roundLabel = completed ? 'Final' : 'R' + (st.period || 1);
+  for (const c of comp.competitors || []) {
+    const fullName = (c.athlete||{}).displayName || (c.athlete||{}).fullName || '';
+    if (!fullName) continue;
+    const raw = c.score || 'E';
+    let val = 0;
+    if (raw !== 'E' && raw !== '' && raw !== '--') {
+      const n = parseInt(raw, 10);
+      val = isNaN(n) ? 0 : n;
+    }
+    const statType = (c.status||'').toUpperCase();
+    let status = 'active';
+    if (statType === 'CUT' || statType === 'MC') status = 'MC';
+    else if (statType === 'WD' || statType === 'WITHDRAWN') status = 'WD';
+    else if (statType === 'DQ' || statType === 'DISQUALIFIED') status = 'DQ';
+    const thruRaw = String(c.thru || '');
+    const thru = thruRaw === '18' ? 'F' : thruRaw || '*';
+    const matched = matchGolfer(fullName);
+    if (matched) golferScores[matched] = { val, pos: String(c.sortOrder||'—'), status, thru };
+  }
+  return roundLabel;
+}
+
+// ── Build leaderboard ──
+function buildBoard() {
+  const standings = Object.entries(PARTICIPANTS).map(([name, golfers]) => {
+    const scores = golfers.map(g => {
+      const d = golferScores[g] || {};
+      const status = d.status || 'not_started';
+      const val = (status === 'MC' || status === 'WD' || status === 'DQ')
+        ? null
+        : (d.val !== undefined && d.val !== null ? d.val : 0);
+      return { name: g, val, pos: d.pos || '—', status, thru: d.thru || '' };
+    });
+    const active = scores.filter(s => s.val !== null);
+    active.sort((a, b) => a.val - b.val);
+    const best = active.slice(0, BEST_N);
+    const hasData = Object.keys(golferScores).length > 0;
+    const total = hasData && best.length > 0 ? best.reduce((sum, s) => sum + s.val, 0) : null;
+    return { name, scores, best, total };
+  });
+
+  standings.sort((a, b) => {
+    if (a.total === null && b.total === null) return 0;
+    if (a.total === null) return 1;
+    if (b.total === null) return -1;
+    return a.total - b.total;
+  });
+
+  let rankN = 1;
+  const rowsHTML = standings.map(p => {
+    const rank = p.total !== null ? rankN++ : '—';
+    const sf = p.total !== null ? sv(p.total, 'active') : { txt: '—', cls: 'empty' };
+    const rankCls = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
+
+    const tags = p.scores.map(s => {
+      const isBest = p.best.find(b => b.name === s.name);
+      const isCut  = s.status === 'MC' || s.status === 'WD' || s.status === 'DQ';
+      const isNS   = s.status === 'not_started';
+      let cls = 'g-tag' + (isCut ? ' cut' : isBest ? ' counting' : '');
+      let label = s.name;
+      if (isCut) label += ' (' + s.status + ')';
+      else if (!isNS && s.val !== null) {
+        label += ' ' + (s.val === 0 ? 'E' : s.val > 0 ? '+'+s.val : s.val);
+      }
+      return `<span class="${cls}">${label}</span>`;
+    }).join('');
+
+    return `<div class="board-row ${rankCls}">
+      <div class="rank-num">${rank}</div>
+      <div>
+        <div class="p-name">${p.name}</div>
+        <div class="golfer-list">${tags}</div>
+      </div>
+      <div class="score-col">
+        <div class="score-val ${sf.cls}">${sf.txt}</div>
+        <div class="score-label">best ${BEST_N}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('board-wrap').innerHTML = `
+    <div class="board-hd"><div></div><div>Participant · Golfers</div><div class="col-score">Score</div></div>
+    ${rowsHTML}`;
+
+  // Individual scores panel
+  const scored = _allGolfers
+    .map(g => ({ name: g, owner: GOLFER_OWNER[g], ...(golferScores[g]||{}) }))
+    .filter(g => g.val !== undefined && g.val !== null)
+    .sort((a, b) => {
+      const aC = a.status==='MC'||a.status==='WD', bC = b.status==='MC'||b.status==='WD';
+      if (aC && !bC) return 1; if (!aC && bC) return -1;
+      return (a.val??999) - (b.val??999);
+    });
+
+  if (scored.length > 0) {
+    const gRows = scored.map(g => {
+      const sf = sv(g.val, g.status);
+      const thru = g.thru ? ` · ${g.thru}` : '';
+      return `<div class="golfer-row">
+        <div>
+          <div class="g-name">${g.name}<span style="color:rgba(240,238,234,0.2);font-size:10px;">${thru}</span></div>
+          <div class="g-owner">${g.owner}</div>
+        </div>
+        <div class="g-pos">${g.pos||'—'}</div>
+        <div class="g-score ${sf.cls}">${sf.txt}</div>
+      </div>`;
+    }).join('');
+    document.getElementById('golfer-wrap').innerHTML = `
+      <div class="golfer-row hd"><div>Golfer</div><div style="text-align:center">Pos</div><div style="text-align:right">Score</div></div>
+      ${gRows}`;
+    document.getElementById('detail-section').style.display = 'block';
+  }
+}
+
+// ── Fetch & refresh ──
+async function fetchScores() {
+  const btn = document.getElementById('refresh-btn');
+  const label = document.getElementById('btn-label');
+  btn.disabled = true;
+  label.innerHTML = '<span class="spinner"></span>Fetching…';
+  document.getElementById('board-wrap').innerHTML = '<div class="msg-area"><span class="spinner"></span>Loading live scores from ESPN…</div>';
+  document.getElementById('detail-section').style.display = 'none';
+
+  let data = null, source = '';
+  try {
+    data = await fetchESPN(ESPN_URL); source = 'ESPN';
+  } catch {
+    try {
+      data = await fetchESPN(PROXY_URL); source = 'ESPN (proxy)';
+    } catch (e2) {
+      document.getElementById('board-wrap').innerHTML =
+        `<div class="msg-area err-msg">Could not reach ESPN — check your connection and try again.<br><small style="opacity:0.5">${e2.message}</small></div>`;
+      btn.disabled = false;
+      label.textContent = '↻ Refresh Scores';
+      return;
+    }
+  }
+
+  try {
+    const roundLabel = parseESPN(data);
+    const time = new Date().toLocaleTimeString('en-IE', { hour:'2-digit', minute:'2-digit' });
+    document.getElementById('updated-time').textContent = `${time} via ${source}`;
+    document.getElementById('updated-chip').style.display = 'flex';
+    document.getElementById('live-dot').classList.remove('off');
+    document.getElementById('status-txt').textContent = `${roundLabel} · Live`;
+    buildBoard();
+  } catch (e) {
+    document.getElementById('board-wrap').innerHTML =
+      `<div class="msg-area err-msg">Error parsing ESPN data.<br><small style="opacity:0.5">${e.message}</small></div>`;
+  }
+
+  btn.disabled = false;
+  label.textContent = '↻ Refresh Scores';
+}
+
+// ── Static roster on load ──
+(function() {
+  const rowsHTML = Object.entries(PARTICIPANTS).map(([name, golfers]) => {
+    const tags = golfers.map(g => `<span class="g-tag">${g}</span>`).join('');
+    return `<div class="board-row">
+      <div class="rank-num">—</div>
+      <div><div class="p-name">${name}</div><div class="golfer-list">${tags}</div></div>
+      <div class="score-col"><div class="score-val empty">—</div><div class="score-label">best ${BEST_N}</div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('board-wrap').innerHTML = `
+    <div class="board-hd"><div></div><div>Participant · Golfers</div><div class="col-score">Score</div></div>
+    ${rowsHTML}`;
+})();
+</script>
+</body>
+</html>
