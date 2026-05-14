@@ -374,13 +374,13 @@
 const BEST_N = 3; // best N of 6 golfers count
 
 const PARTICIPANTS = {
-  'Tim':    ['Bryson DeChambeau','Tommy Fleetwood','Robert MacIntyre','Joaquin Niemann','Jason Day','Marco Penge'],
-  'Conor':  ['Cameron Young','Brooks Koepka','Patrick Cantlay','Christopher Gotterup','Jake Knapp','Will Zalatoris'],
-  'Simon':  ['Jon Rahm','Viktor Hovland','Russell Henley','Shane Lowry','Maverick McNealy','Corey Conners'],
-  'Mark P': ['Xander Schauffele','Justin Thomas','Si Woo Kim','Jordan Spieth','Akshay Bhatia','Nicolai Hojgaard'],
-  'Tom':    ['Scottie Scheffler','Collin Morikawa','Sam Burns','Patrick Reed','Min Woo Lee','Adam Scott'],
-  'Mark M': ['Matt Fitzpatrick','Ludvig Aberg','Hideki Matsuyama','Sepp Straka','Kurt Kitayama','Rickie Fowler'],
-  'Alex':   ['Rory McIlroy','Justin Rose','Tyrrell Hatton','J.J. Spaun','Ben Griffin','Jacob Bridgeman'],
+  'Tim Maher':       ['Bryson DeChambeau','Tommy Fleetwood','Robert MacIntyre','Joaquin Niemann','Jason Day','Marco Penge'],
+  'Conor Boden':     ['Cameron Young','Brooks Koepka','Patrick Cantlay','Christopher Gotterup','Jake Knapp','Will Zalatoris'],
+  'Simon Maguire':   ['Jon Rahm','Viktor Hovland','Russell Henley','Shane Lowry','Maverick McNealy','Corey Conners'],
+  'Mark Poland':     ['Xander Schauffele','Justin Thomas','Si Woo Kim','Jordan Spieth','Akshay Bhatia','Nicolai Hojgaard'],
+  'Thomas O\'Grady': ['Scottie Scheffler','Collin Morikawa','Sam Burns','Patrick Reed','Min Woo Lee','Adam Scott'],
+  'Mark Murphy':     ['Matt Fitzpatrick','Ludvig Aberg','Hideki Matsuyama','Sepp Straka','Kurt Kitayama','Rickie Fowler'],
+  'Alex Walsh':      ['Rory McIlroy','Justin Rose','Tyrrell Hatton','J.J. Spaun','Ben Griffin','Jacob Bridgeman'],
 };
 
 const GOLFER_OWNER = {};
@@ -413,15 +413,21 @@ for (const g of _allGolfers) {
 
 function matchGolfer(espnName) {
   const en = normalise(espnName);
+  // 1. Exact normalised full name
   if (_normFull.has(en)) return _normFull.get(en);
   const el = en.split(' ').pop();
   const byLast = _normLast.get(el) || [];
-  if (byLast.length === 1) return byLast[0];
+  // 2. Only one golfer with that last name in our list
+  if (byLast.length === 1) {
+    // Verify first initial matches to avoid Alex Fitzpatrick → Matt Fitzpatrick
+    const ourFirst = normalise(byLast[0])[0];
+    const espnFirst = en[0];
+    if (ourFirst === espnFirst) return byLast[0];
+    return null; // Last name matches but first initial doesn't — wrong person
+  }
+  // 3. Multiple golfers with same last name — disambiguate by first initial
   if (byLast.length > 1) {
     for (const g of byLast) { if (normalise(g)[0] === en[0]) return g; }
-  }
-  for (const [nl, gs] of _normLast) {
-    if ((en.includes(nl) || nl.includes(el)) && gs.length === 1) return gs[0];
   }
   return null;
 }
@@ -450,10 +456,7 @@ function parseESPN(data) {
   golferScores = {};
   let roundLabel = '—';
   const events = data.events || [];
-  const tourney = events.find(e =>
-    (e.name||'').toLowerCase().includes('pga') ||
-    (e.shortName||'').toLowerCase().includes('pga')
-  ) || events[0];
+  const tourney = events[0];
   if (!tourney) return roundLabel;
   const comp = (tourney.competitions||[])[0];
   if (!comp) return roundLabel;
@@ -463,19 +466,24 @@ function parseESPN(data) {
   for (const c of comp.competitors || []) {
     const fullName = (c.athlete||{}).displayName || (c.athlete||{}).fullName || '';
     if (!fullName) continue;
+    // c.score is the to-par value as a string: "E", "-4", "+2" etc.
     const raw = c.score || 'E';
     let val = 0;
     if (raw !== 'E' && raw !== '' && raw !== '--') {
       const n = parseInt(raw, 10);
       val = isNaN(n) ? 0 : n;
     }
-    const statType = (c.status||'').toUpperCase();
+    // Status — ESPN doesn't put MC/WD on competitor.status in this feed
+    // It uses competitor.status.type or just absence of scores post-cut
+    const statObj = c.status || {};
+    const statName = (typeof statObj === 'string' ? statObj : (statObj.type?.name || '')).toUpperCase();
     let status = 'active';
-    if (statType === 'CUT' || statType === 'MC') status = 'MC';
-    else if (statType === 'WD' || statType === 'WITHDRAWN') status = 'WD';
-    else if (statType === 'DQ' || statType === 'DISQUALIFIED') status = 'DQ';
-    const thruRaw = String(c.thru || '');
-    const thru = thruRaw === '18' ? 'F' : thruRaw || '*';
+    if (statName.includes('CUT') || statName.includes('MC')) status = 'MC';
+    else if (statName.includes('WD') || statName.includes('WITHDRAWN')) status = 'WD';
+    else if (statName.includes('DQ') || statName.includes('DISQUALIFIED')) status = 'DQ';
+    // thru — ESPN doesn't have a simple thru field, derive from linescores
+    const ls = c.linescores || [];
+    const thru = ls.length === 0 ? '*' : (raw === 'E' && ls.every(l => !l.value) ? '*' : 'F');
     const matched = matchGolfer(fullName);
     if (matched) golferScores[matched] = { val, pos: String(c.sortOrder||'—'), status, thru };
   }
